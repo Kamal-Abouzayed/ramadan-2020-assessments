@@ -3,6 +3,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const videoForm = document.getElementById("videoReqForm");
 
+  const sortBtns = document.querySelectorAll("[id*=sort_by_]");
+
+  // display data in video request list
+  function getVideoReqs(sortBy = "newFirst") {
+    fetch(`http://localhost:7777/video-request?sortBy=${sortBy}`)
+      .then((videos) => videos.json())
+      .then((list) => {
+        videoList.innerHTML = "";
+
+        list.forEach((video) => {
+          appendToList(video);
+        });
+      });
+  }
+
+  getVideoReqs();
+
+  sortBtns.forEach((el) => {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      sortValue = this.querySelector("input").value;
+      getVideoReqs(sortValue);
+      this.classList.add("active");
+
+      if (sortValue === "topVotedFirst") {
+        document.getElementById("sort_by_new").classList.remove("active");
+      } else {
+        document.getElementById("sort_by_top").classList.remove("active");
+      }
+    });
+  });
+
   // submit video request
   videoForm.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -14,51 +46,12 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("http://localhost:7777/video-request", { method: "POST", body: data })
       .then((jsonData) => jsonData.json())
       .then((video) => {
-        videoList.prepend(appendToList(video));
+        appendToList(video, true);
       });
   });
 
-  // display data in video request list
-  fetch("http://localhost:7777/video-request")
-    .then((videos) => videos.json())
-    .then((list) => {
-      list.forEach((video) => {
-        videoList.appendChild(appendToList(video));
-
-        const voteUpsElm = document.getElementById(`votes_ups_${video._id}`);
-        const voteDownsElm = document.getElementById(
-          `votes_downs_${video._id}`
-        );
-        const voteScoreElm = document.getElementById(`score_vote_${video._id}`);
-
-        voteUpsElm.addEventListener("click", function (e) {
-          e.preventDefault();
-
-          fetch("http://localhost:7777/video-request/vote", {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ id: video._id, vote_type: "ups" }),
-          })
-            .then((bolb) => bolb.json())
-            .then((data) => (voteScoreElm.innerHTML = data.ups - data.downs));
-        });
-
-        voteDownsElm.addEventListener("click", function (e) {
-          e.preventDefault();
-
-          fetch("http://localhost:7777/video-request/vote", {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ id: video._id, vote_type: "downs" }),
-          })
-            .then((bolb) => bolb.json())
-            .then((data) => (voteScoreElm.innerHTML = data.ups - data.downs));
-        });
-      });
-    });
-
   // append to list function
-  function appendToList(video) {
+  function appendToList(video, isPrepend = false) {
     const div = document.createElement("div");
 
     div.innerHTML = `<div class="card mb-3">
@@ -101,6 +94,38 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         </div>`;
 
-    return div;
+    if (isPrepend) {
+      videoList.prepend(div);
+    } else {
+      videoList.appendChild(div);
+    }
+
+    const voteUpsElm = document.getElementById(`votes_ups_${video._id}`);
+    const voteDownsElm = document.getElementById(`votes_downs_${video._id}`);
+    const voteScoreElm = document.getElementById(`score_vote_${video._id}`);
+
+    voteUpsElm.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      fetch("http://localhost:7777/video-request/vote", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: video._id, vote_type: "ups" }),
+      })
+        .then((bolb) => bolb.json())
+        .then((data) => (voteScoreElm.innerHTML = data.ups - data.downs));
+    });
+
+    voteDownsElm.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      fetch("http://localhost:7777/video-request/vote", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: video._id, vote_type: "downs" }),
+      })
+        .then((bolb) => bolb.json())
+        .then((data) => (voteScoreElm.innerHTML = data.ups - data.downs));
+    });
   }
 });
