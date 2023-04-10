@@ -24,9 +24,40 @@ document.addEventListener("DOMContentLoaded", function () {
     .then((list) => {
       list.forEach((video) => {
         videoList.appendChild(appendToList(video));
+
+        const voteUpsElm = document.getElementById(`votes_ups_${video._id}`);
+        const voteDownsElm = document.getElementById(
+          `votes_downs_${video._id}`
+        );
+        const voteScoreElm = document.getElementById(`score_vote_${video._id}`);
+
+        voteUpsElm.addEventListener("click", function (e) {
+          e.preventDefault();
+
+          fetch("http://localhost:7777/video-request/vote", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: video._id, vote_type: "ups" }),
+          })
+            .then((bolb) => bolb.json())
+            .then((data) => (voteScoreElm.innerHTML = data.ups - data.downs));
+        });
+
+        voteDownsElm.addEventListener("click", function (e) {
+          e.preventDefault();
+
+          fetch("http://localhost:7777/video-request/vote", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: video._id, vote_type: "downs" }),
+          })
+            .then((bolb) => bolb.json())
+            .then((data) => (voteScoreElm.innerHTML = data.ups - data.downs));
+        });
       });
     });
 
+  // append to list function
   function appendToList(video) {
     const div = document.createElement("div");
 
@@ -44,9 +75,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 </p>
             </div>
             <div class="d-flex flex-column text-center">
-                <a class="btn btn-link">🔺</a>
-                <h3>0</h3>
-                <a class="btn btn-link">🔻</a>
+                <a id="votes_ups_${video._id}" class="btn btn-link">🔺</a>
+                <h3 id="score_vote_${video._id}">${
+      video.votes.ups - video.votes.downs
+    }</h3>
+                <a id="votes_downs_${video._id}" class="btn btn-link">🔻</a>
             </div>
             </div>
             <div class="card-footer d-flex flex-row justify-content-between">
